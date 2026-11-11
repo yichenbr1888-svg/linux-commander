@@ -1,0 +1,11 @@
+# Linux 指令器 — host row (publish-safe: no secrets in this file).
+# Provide the AI API key on each machine via EITHER:
+#   1. environment variable DSH_LINUX_COMMANDER_API_KEY (takes precedence), or
+#   2. a profile-level cordis.patch.yml override of this row's config.apiKey.
+- insert:
+    - id: linux-commander
+      name: 'dsh-linux-commander'
+      config:
+        endpoint: 'https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions'
+        model: 'spark-x2.6'
+        timeoutMs: 45000

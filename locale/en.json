@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "title": "Linux commands",
+    "description": "A lightweight docked Linux tool: explains commands and turns plain language into commands, local-first with AI fallback."
+  },
+  "ui": {
+    "title": "Linux commands",
+    "placeholder": "Command or task",
+    "open": "Open Linux commands",
+    "close": "Collapse",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "loading": "Searching",
+    "sourceLocal": "local",
+    "sourceAi": "AI",
+    "errorGeneric": "Query failed, please retry",
+    "errorNetwork": "Cannot reach the local service",
+    "emptyInput": "Type something first"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "name": "dsh-linux-commander",
+  "version": "1.0.0",
+  "description": "DSH plugin: a docked Linux command explainer and natural-language-to-command tool, local-first with AI fallback.",
+  "type": "module",
+  "license": "MIT",
+  "author": "yichenbr1888-svg",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yichenbr1888-svg/linux-commander.git"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "linux",
+    "command",
+    "cheatsheet"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "src/*.js",
+    "src/client/*.js",
+    "locale/*.json",
+    "icon.svg",
+    "build-client.mjs",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}
