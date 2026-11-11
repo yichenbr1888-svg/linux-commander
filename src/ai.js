@@ -1,11 +1,11 @@
 // Linux 指令器 — AI fallback adapter (host-side only).
-// Talks to an OpenAI-compatible chat endpoint (xf-yun MaaS by default).
-// The API key never leaves the host process. Includes timeout control,
-// tolerant response parsing, an LRU result cache, and in-flight dedupe.
+// Talks to any OpenAI-compatible chat completions endpoint. Endpoint, model
+// and key are supplied per machine via plugin config or environment
+// variables; no vendor-specific values ship with the package. Includes
+// timeout control, tolerant response parsing, an LRU result cache, and
+// in-flight dedupe.
 
-// The MaaS gateway answers chat on /v2/chat/completions; bare /v2 is 404.
-const DEFAULT_ENDPOINT = 'https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions';
-const DEFAULT_MODEL = 'spark-x2.6';
+const DEFAULT_MODEL = '';
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const CACHE_MAX = 200;
 
@@ -30,7 +30,7 @@ function userPrompt(input, intent) {
   return `${task}\n输入：${input}`;
 }
 
-/** Pull assistant text out of OpenAI / xf-yun response shapes. */
+/** Pull assistant text out of OpenAI-style and common vendor response shapes. */
 function extractContent(data) {
   if (!data || typeof data !== 'object') return null;
   if (data.header && typeof data.header.code === 'number' && data.header.code !== 0) {
@@ -93,10 +93,12 @@ function parseAnswer(content, input, intent) {
 }
 
 export function createAiAdapter(config = {}, logger) {
-  const endpoint = typeof config.endpoint === 'string' && config.endpoint.trim() ? config.endpoint.trim() : DEFAULT_ENDPOINT;
-  const model = typeof config.model === 'string' && config.model.trim() ? config.model.trim() : DEFAULT_MODEL;
+  const endpoint = process.env.DSH_LINUX_COMMANDER_ENDPOINT
+    || (typeof config.endpoint === 'string' ? config.endpoint.trim() : '');
+  const model = process.env.DSH_LINUX_COMMANDER_MODEL
+    || (typeof config.model === 'string' && config.model.trim() ? config.model.trim() : DEFAULT_MODEL);
   const apiKey = process.env.DSH_LINUX_COMMANDER_API_KEY || (typeof config.apiKey === 'string' ? config.apiKey.trim() : '');
-  // spark-x2.6 reasons before answering (~20s observed); allow a generous budget.
+  // Reasoning models may take 20-30s; allow a generous budget.
   const timeoutMs = Math.min(120000, Math.max(3000, Number(config.timeoutMs) || 45000));
   const cache = new Map();
   const inflight = new Map();
@@ -160,9 +162,9 @@ export function createAiAdapter(config = {}, logger) {
   }
 
   return {
-    configured: Boolean(apiKey),
+    configured: Boolean(apiKey && endpoint && model),
     async query(input, intent) {
-      if (!apiKey) return { ok: false, code: 'not_configured', message: 'AI 接口未配置，仅支持本地查询' };
+      if (!apiKey || !endpoint || !model) return { ok: false, code: 'not_configured', message: 'AI 接口未配置，仅支持本地查询' };
       const key = `${intent}\u0000${input}`;
       const cached = cacheGet(key);
       if (cached) return { ...cached, source: 'cache' };

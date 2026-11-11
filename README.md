@@ -25,7 +25,7 @@ npm login          # 或 pnpm login
 npm publish        # 包名无 scope，默认公开
 ```
 
-GitHub 仓库：<https://github.com/yichenbr1888-svg/linux-commander>。发布前务必确认包内不含任何 API Key（本仓库的 cordis.patch.yml 已不含密钥；Key 只走环境变量或各机 profile 覆盖）。
+GitHub 仓库：<https://github.com/yichenbr1888-svg/linux-commander>。发布前务必确认包内不含任何 API Key、接口地址或模型名（本仓库均已移除；这些值只走各机环境变量或 profile 覆盖）。
 
 ## 结构
 
@@ -45,31 +45,31 @@ UI、识别、本地查询、AI 请求四层分离。浏览器只负责展示与
 
 ## AI 接口配置（仅 Host 端）
 
-API Key 只存在于各机的环境变量或 profile 配置，**绝不进入发布包和前端 bundle**。
+AI 后端的地址、模型与 Key 全部由每台机器自行配置，**发布包与前端 bundle 不含任何密钥或厂商信息**。适配器兼容 OpenAI 风格的 chat completions 接口（`choices[0].message.content`），也容忍部分厂商的扩展响应形状。
 
-配置 Key（二选一）：
+三项配置（环境变量优先于 profile 配置）：
 
-- 环境变量 `DSH_LINUX_COMMANDER_API_KEY`（优先级最高）。Windows：`setx DSH_LINUX_COMMANDER_API_KEY "<你的Key>"` 后重启 DSH；macOS/Linux：写入 shell 启动文件后重启 DSH。
-- 或在目标机 profile 的 `cordis.patch.yml` 中覆盖本插件行的配置：
+| 环境变量 | 含义 |
+|---|---|
+| `DSH_LINUX_COMMANDER_ENDPOINT` | OpenAI 兼容的 chat completions 完整 URL |
+| `DSH_LINUX_COMMANDER_MODEL` | 模型 ID |
+| `DSH_LINUX_COMMANDER_API_KEY` | API Key |
+
+Windows 用 `setx <变量名> "<值>"` 写入后重启 DSH；macOS/Linux 写入 shell 启动文件后重启 DSH。
+
+或在目标机 profile 的 `cordis.patch.yml` 中覆盖本插件行的配置：
 
 ```yaml
 - id: linux-commander
   name: 'dsh-linux-commander'
   config:
+    endpoint: '<你的 chat completions URL>'
+    model: '<模型 ID>'
     apiKey: '<你的 API Key>'
+    timeoutMs: 45000   # 3000–120000；推理类模型可能需 20–30s
 ```
 
-包内默认配置（不含密钥）：
-
-```yaml
-config:
-  endpoint: 'https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions'   # OpenAI 兼容 chat 接口（裸 /v2 会 404）
-  model: 'spark-x2.6'
-  timeoutMs: 45000        # 3000–120000；spark-x2.6 为推理模型，实测约 20s
-```
-
-- 换用其他 AI 服务：改 `endpoint` / `model` 即可，适配器兼容 OpenAI `choices[0].message.content` 与讯飞 `payload.choices.text[0].content` 等常见响应形状。
-- 未配置 Key 时本地功能完全可用，AI 兜底返回「AI 接口未配置」。
+- 三项齐全才启用 AI 兜底；缺任何一项时本地功能完全可用，AI 查询返回「AI 接口未配置」。
 - 重复查询命中 30 分钟 LRU 缓存（最多 200 条），相同请求并发去重，减少 API 消耗。
 
 ## 扩展指令库
@@ -81,8 +81,8 @@ config:
 
 ## 交互
 
-- 待机：右侧边缘窄条图标，无文字；点击展开。
-- 展开：输入框自动聚焦，Enter 发送，Esc 或右上角按钮收起。
+- 待机：右侧边缘窄条图标，无文字；点击展开。**按住图标可上下拖动**调整停靠位置（松手自动记忆，窗口缩放自适应）；键盘聚焦后 ↑/↓ 微调（Shift 加速）。
+- 展开：弹窗对齐停靠位置并自动避开屏幕边缘；输入框自动聚焦，Enter 发送，Esc 或右上角按钮收起。
 - 结果：等宽字体命令 + 一键复制（成功/失败短暂反馈）+ 一句解释 + 可选风险提醒；右下角小标签标注「本地 / AI」来源。
 - 加载中为三点动画；新查询自动替换旧结果并中止旧请求；重复 Enter 不重复发请求。
 - 浅色/深色跟随 Harness 主题（仅使用 --dsw-alias-* 主题令牌），适配移动端与 prefers-reduced-motion。

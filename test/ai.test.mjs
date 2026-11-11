@@ -22,7 +22,7 @@ test('OpenAI response shape', () => withFetch(async () => openai('{"kind":"expla
   assert.equal(r.explanation, '列出文件');
 }));
 
-test('xf-yun payload shape and fenced JSON', () => withFetch(async () => jsonRes(200, { payload: { choices: { text: [{ content: '```json\n{"kind":"generate","command":"df -h","explanation":"查看磁盘"}\n```' }] } } }), async () => {
+test('vendor payload shape and fenced JSON', () => withFetch(async () => jsonRes(200, { payload: { choices: { text: [{ content: '```json\n{"kind":"generate","command":"df -h","explanation":"查看磁盘"}\n```' }] } } }), async () => {
   const ai = createAiAdapter(CFG);
   const r = await ai.query('查看磁盘空间', 'natural');
   assert.equal(r.ok, true);
@@ -107,6 +107,24 @@ test('not configured and timeout', async () => {
     assert.equal(r.ok, false);
     assert.equal(r.code, 'timeout');
   });
+});
+
+test('missing endpoint or model is not configured', async () => {
+  const prevE = process.env.DSH_LINUX_COMMANDER_ENDPOINT;
+  const prevM = process.env.DSH_LINUX_COMMANDER_MODEL;
+  delete process.env.DSH_LINUX_COMMANDER_ENDPOINT;
+  delete process.env.DSH_LINUX_COMMANDER_MODEL;
+  try {
+    const a = createAiAdapter({ apiKey: 'k', model: 'm' });
+    assert.equal(a.configured, false);
+    assert.equal((await a.query('x', 'auto')).code, 'not_configured');
+    const b = createAiAdapter({ apiKey: 'k', endpoint: 'https://e.test/v1/chat/completions' });
+    assert.equal(b.configured, false);
+    assert.equal((await b.query('x', 'auto')).code, 'not_configured');
+  } finally {
+    if (prevE !== undefined) process.env.DSH_LINUX_COMMANDER_ENDPOINT = prevE;
+    if (prevM !== undefined) process.env.DSH_LINUX_COMMANDER_MODEL = prevM;
+  }
 });
 
 test('request carries key, model and single-line JSON instruction', () => {

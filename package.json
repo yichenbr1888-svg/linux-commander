@@ -1,6 +1,6 @@
 {
   "name": "dsh-linux-commander",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "DSH plugin: a docked Linux command explainer and natural-language-to-command tool, local-first with AI fallback.",
   "type": "module",
   "license": "MIT",

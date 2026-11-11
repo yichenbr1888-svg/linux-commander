@@ -4,13 +4,14 @@
 // Never executes anything; commands are text only.
 
 const CSS = String.raw`
-.lxc-root{position:fixed;right:0;top:50%;width:0;height:0;z-index:1000;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;}
+.lxc-root{position:fixed;right:0;top:0;width:0;height:0;z-index:1000;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;}
 .lxc-root *,.lxc-root *::before,.lxc-root *::after{box-sizing:border-box;}
-.lxc-dock{position:absolute;right:0;top:-28px;width:30px;height:56px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--dsw-alias-border-l1);border-right:none;border-radius:10px 0 0 10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);cursor:pointer;box-shadow:-2px 2px 10px color-mix(in srgb,var(--dsw-alias-label-primary) 10%,transparent);transition:color .16s ease,background .16s ease,transform .16s ease;animation:lxc-fade .18s ease;}
+.lxc-dock{position:absolute;right:0;margin-top:-28px;width:30px;height:56px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--dsw-alias-border-l1);border-right:none;border-radius:10px 0 0 10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:-2px 2px 10px color-mix(in srgb,var(--dsw-alias-label-primary) 10%,transparent);transition:color .16s ease,background .16s ease,transform .16s ease,box-shadow .16s ease;animation:lxc-fade .18s ease;}
 .lxc-dock:hover{color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2);transform:translateX(-2px);}
 .lxc-dock:active{transform:translateX(-2px) scale(.96);}
+.lxc-dock.lxc-dragging{cursor:grabbing;transition:none;color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2);transform:translateX(-2px) scale(1.04);box-shadow:-4px 5px 16px color-mix(in srgb,var(--dsw-alias-label-primary) 20%,transparent);}
 .lxc-dock:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;}
-.lxc-panel{position:absolute;right:10px;top:0;transform:translateY(-50%);width:min(340px,calc(100vw - 24px));max-height:min(460px,calc(100vh - 32px));display:flex;flex-direction:column;background:var(--dsw-alias-bg-overlay);border:1px solid var(--dsw-alias-border-l1);border-radius:14px;box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 16%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);animation:lxc-in .19s cubic-bezier(.2,.7,.3,1);}
+.lxc-panel{position:absolute;right:10px;width:min(340px,calc(100vw - 24px));max-height:min(460px,calc(100vh - 32px));display:flex;flex-direction:column;background:var(--dsw-alias-bg-overlay);border:1px solid var(--dsw-alias-border-l1);border-radius:14px;box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 16%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);animation:lxc-in .19s cubic-bezier(.2,.7,.3,1);}
 .lxc-panel.lxc-closing{animation:lxc-out .15s ease forwards;}
 .lxc-head{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 8px 14px;flex:none;}
 .lxc-title{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-primary);user-select:none;}
@@ -44,14 +45,14 @@ const CSS = String.raw`
 .lxc-loading i{width:5px;height:5px;border-radius:50%;background:var(--dsw-alias-label-secondary);opacity:.35;animation:lxc-pulse 1s ease-in-out infinite;}
 .lxc-loading i:nth-child(2){animation-delay:.16s;}
 .lxc-loading i:nth-child(3){animation-delay:.32s;}
-@keyframes lxc-in{from{opacity:0;transform:translateY(-50%) translateX(12px);}to{opacity:1;transform:translateY(-50%) translateX(0);}}
-@keyframes lxc-out{from{opacity:1;transform:translateY(-50%) translateX(0);}to{opacity:0;transform:translateY(-50%) translateX(12px);}}
+@keyframes lxc-in{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:translateX(0);}}
+@keyframes lxc-out{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(12px);}}
 @keyframes lxc-fade{from{opacity:0;}to{opacity:1;}}
 @keyframes lxc-pulse{0%,100%{opacity:.25;transform:scale(.85);}50%{opacity:.9;transform:scale(1);}}
 @keyframes lxc-shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}75%{transform:translateX(3px);}}
 @media (max-width:480px){
 .lxc-panel{right:8px;width:calc(100vw - 16px);}
-.lxc-dock{width:26px;height:48px;top:-24px;}
+.lxc-dock{width:26px;height:48px;margin-top:-24px;}
 }
 @media (prefers-reduced-motion:reduce){
 .lxc-panel,.lxc-dock,.lxc-input,.lxc-copy,.lxc-close,.lxc-loading i{animation:none !important;transition:none !important;}
@@ -88,7 +89,21 @@ function WarnIcon() {
 
 function createWidget(React, ctx, t) {
   const h = React.createElement;
-  const { useState, useRef, useEffect, useReducer } = React;
+  const { useState, useRef, useEffect, useLayoutEffect, useReducer } = React;
+
+  const DOCK_MARGIN = 36; // keep the tab fully on-screen
+  const STORE_KEY = 'linux-commander.dockY';
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+
+  function initialDockY() {
+    const vh = window.innerHeight || 800;
+    let frac = 0.5;
+    try {
+      const saved = Number(localStorage.getItem(STORE_KEY));
+      if (Number.isFinite(saved) && saved > 0 && saved < 1) frac = saved;
+    } catch { /* storage unavailable */ }
+    return clamp(frac * vh, DOCK_MARGIN, vh - DOCK_MARGIN);
+  }
 
   function Widget() {
     const [open, setOpen] = useState(false);
@@ -99,10 +114,15 @@ function createWidget(React, ctx, t) {
     const [error, setError] = useState('');
     const [copyState, setCopyState] = useState('idle'); // idle | ok | fail
     const [shake, setShake] = useState(false);
+    const [dockY, setDockYState] = useState(initialDockY);
+    const [vh, setVh] = useState(() => window.innerHeight || 800);
+    const [panelH, setPanelH] = useState(180);
+    const [dragging, setDragging] = useState(false);
     const [, bump] = useReducer((x) => x + 1, 0);
 
     const inputRef = useRef(null);
     const dockRef = useRef(null);
+    const panelRef = useRef(null);
     const seqRef = useRef(0);
     const abortRef = useRef(null);
     const lastQueryRef = useRef('');
@@ -110,8 +130,45 @@ function createWidget(React, ctx, t) {
     const copyTimerRef = useRef(null);
     const shakeTimerRef = useRef(null);
     const closingRef = useRef(false);
+    const dockYRef = useRef(dockY);
+    const dragRef = useRef(null);
+    const suppressClickRef = useRef(false);
+
+    function setDockY(y) {
+      dockYRef.current = y;
+      setDockYState(y);
+    }
+
+    function persistDockY() {
+      try {
+        const frac = dockYRef.current / (window.innerHeight || vh || 1);
+        localStorage.setItem(STORE_KEY, String(clamp(frac, 0, 1)));
+      } catch { /* storage unavailable */ }
+    }
 
     useEffect(() => ctx.locale.subscribe(bump), [ctx]);
+
+    useEffect(() => {
+      const onResize = () => {
+        const hgt = window.innerHeight || 800;
+        setVh(hgt);
+        setDockY(clamp(dockYRef.current, DOCK_MARGIN, hgt - DOCK_MARGIN));
+      };
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    // Measure the panel so it stays fully on-screen near the dock position.
+    useLayoutEffect(() => {
+      if (!open || !panelRef.current) return;
+      const el = panelRef.current;
+      const measure = () => setPanelH(el.offsetHeight || 180);
+      measure();
+      if (typeof ResizeObserver === 'undefined') return;
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, [open]);
 
     useEffect(() => () => {
       abortRef.current?.abort();
@@ -130,6 +187,55 @@ function createWidget(React, ctx, t) {
       document.addEventListener('keydown', onKey, true);
       return () => { cancelAnimationFrame(raf); document.removeEventListener('keydown', onKey, true); };
     }, [open]);
+
+    // --- vertical drag of the docked tab (pointer + keyboard) ---
+    function onDockPointerDown(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      dragRef.current = { startY: e.clientY, origY: dockYRef.current, moved: false };
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
+    }
+
+    function onDockPointerMove(e) {
+      const d = dragRef.current;
+      if (!d) return;
+      const dy = e.clientY - d.startY;
+      if (!d.moved && Math.abs(dy) > 4) { d.moved = true; setDragging(true); }
+      if (d.moved) {
+        e.preventDefault();
+        setDockY(clamp(d.origY + dy, DOCK_MARGIN, (window.innerHeight || vh) - DOCK_MARGIN));
+      }
+    }
+
+    function onDockPointerUp(e) {
+      const d = dragRef.current;
+      dragRef.current = null;
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+      if (!d) return;
+      if (d.moved) {
+        setDragging(false);
+        persistDockY();
+        suppressClickRef.current = true; // the trailing click must not open the panel
+      }
+    }
+
+    function onDockPointerCancel() {
+      dragRef.current = null;
+      setDragging(false);
+    }
+
+    function onDockClick() {
+      if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+      openPanel();
+    }
+
+    function onDockKeyDown(e) {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const step = e.shiftKey ? 96 : 24;
+      const dy = e.key === 'ArrowUp' ? -step : step;
+      setDockY(clamp(dockYRef.current + dy, DOCK_MARGIN, (window.innerHeight || vh) - DOCK_MARGIN));
+      persistDockY();
+    }
 
     function openPanel() {
       if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
@@ -221,10 +327,20 @@ function createWidget(React, ctx, t) {
     if (!open) {
       return h('div', { className: 'lxc-root' },
         h('button', {
-          ref: dockRef, type: 'button', className: 'lxc-dock',
-          'aria-label': t('open'), onClick: openPanel,
+          ref: dockRef, type: 'button',
+          className: 'lxc-dock' + (dragging ? ' lxc-dragging' : ''),
+          style: { top: dockY + 'px' },
+          'aria-label': t('open'),
+          onClick: onDockClick,
+          onPointerDown: onDockPointerDown,
+          onPointerMove: onDockPointerMove,
+          onPointerUp: onDockPointerUp,
+          onPointerCancel: onDockPointerCancel,
+          onKeyDown: onDockKeyDown,
         }, h(DockIcon)));
     }
+
+    const panelTop = clamp(dockY - panelH / 2, 8, Math.max(8, vh - panelH - 8));
 
     const copyLabel = copyState === 'ok' ? t('copied') : copyState === 'fail' ? t('copyFailed') : t('copy');
     const sourceLabel = result ? (result.source === 'local' ? t('sourceLocal') : t('sourceAi')) : '';
@@ -251,7 +367,9 @@ function createWidget(React, ctx, t) {
 
     return h('div', { className: 'lxc-root' },
       h('div', {
+        ref: panelRef,
         className: 'lxc-panel' + (closing ? ' lxc-closing' : ''),
+        style: { top: panelTop + 'px' },
         role: 'dialog', 'aria-label': t('title'),
       },
         h('div', { className: 'lxc-head' },

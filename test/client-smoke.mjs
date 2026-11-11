@@ -17,6 +17,11 @@ globalThis.document = {
   removeEventListener() {},
 };
 globalThis.requestAnimationFrame = () => 0;
+const stored = {};
+globalThis.localStorage = {
+  getItem: (k) => (k in stored ? stored[k] : null),
+  setItem: (k, v) => { stored[k] = v; },
+};
 
 const fakeReact = {
   createElement: (...args) => ({ type: args[0], props: args[1], children: args.slice(2) }),
@@ -24,14 +29,20 @@ const fakeReact = {
   useState: (init) => [typeof init === 'function' ? init() : init, () => {}],
   useRef: (init) => ({ current: init }),
   useEffect: () => {},
+  useLayoutEffect: () => {},
   useReducer: (_r, init) => [init, () => {}],
 };
 
 let registration = null;
-const win = { __ModuleLoader__: { load: (reg) => { registration = reg; } } };
+const win = {
+  __ModuleLoader__: { load: (reg) => { registration = reg; } },
+  innerHeight: 800,
+  addEventListener() {},
+  removeEventListener() {},
+};
 new Function('window', code)(win);
 assert.ok(registration, 'factory registered');
-assert.equal(registration.id, '@local/linux-commander');
+assert.equal(registration.id, 'dsh-linux-commander');
 
 const plugin = registration.factory((name) => {
   if (name === 'react') return fakeReact;
@@ -68,8 +79,27 @@ assert.ok(tree && tree.props.className === 'lxc-root');
 const dock = tree.children[0];
 assert.equal(dock.props.className, 'lxc-dock');
 assert.equal(typeof dock.props.onClick, 'function');
+assert.match(dock.props.style.top, /^\d+(\.\d+)?px$/);
+assert.equal(typeof dock.props.onPointerDown, 'function');
+assert.equal(typeof dock.props.onPointerMove, 'function');
+assert.equal(typeof dock.props.onPointerUp, 'function');
+assert.equal(typeof dock.props.onKeyDown, 'function');
+
+// Simulate a vertical drag: down -> move -> up persists the position and
+// suppresses the trailing click; a plain click still opens.
+const target = { setPointerCapture() {}, releasePointerCapture() {} };
+dock.props.onPointerDown({ button: 0, clientY: 400, pointerId: 1, currentTarget: target });
+dock.props.onPointerMove({ clientY: 460, preventDefault() {} });
+dock.props.onPointerUp({ pointerId: 1, currentTarget: target });
+assert.ok(stored['linux-commander.dockY'], 'drag persisted dock position');
+dock.props.onClick(); // suppressed after drag
+dock.props.onPointerDown({ button: 0, clientY: 460, pointerId: 2, currentTarget: target });
+dock.props.onPointerUp({ pointerId: 2, currentTarget: target });
+dock.props.onClick(); // plain click -> openPanel (no throw)
+dock.props.onKeyDown({ key: 'ArrowUp', preventDefault() {} });
+dock.props.onKeyDown({ key: 'ArrowDown', shiftKey: true, preventDefault() {} });
 
 // Effect cleanups run without throwing.
 for (const { cleanup } of seen.effects) cleanup();
 
-console.log('client smoke OK: locales, effects, shell.overlay registration, dock render');
+console.log('client smoke OK: locales, effects, shell.overlay registration, dock render, drag wiring');
