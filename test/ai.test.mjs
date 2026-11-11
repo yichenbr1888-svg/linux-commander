@@ -137,8 +137,21 @@ test('request carries key, model and single-line JSON instruction', () => {
     const body = JSON.parse(seen.opts.body);
     assert.equal(body.model, 'm');
     assert.equal(body.stream, false);
-    assert.ok(body.max_tokens >= 1000);
+    assert.ok(body.max_completion_tokens >= 1000);
+    assert.equal(body.max_tokens, undefined);
+    assert.equal(body.temperature, undefined);
+    assert.equal(body.thinking.type, 'disabled');
     assert.equal(body.messages[0].role, 'system');
     assert.ok(body.messages[1].content.includes('id'));
+  });
+});
+
+test('thinking is permanently disabled', () => {
+  const bodies = [];
+  return withFetch(async (url, opts) => { bodies.push(JSON.parse(opts.body)); return openai('{"kind":"explain","command":"w","explanation":"登录用户"}'); }, async () => {
+    await createAiAdapter(CFG).query('w-a', 'command');
+    await createAiAdapter({ ...CFG, thinking: 'enabled' }).query('w-b', 'command');
+    assert.equal(bodies[0].thinking.type, 'disabled');
+    assert.equal(bodies[1].thinking.type, 'disabled');
   });
 });

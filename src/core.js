@@ -105,7 +105,7 @@ function explainSegment(seg) {
   if (rest.length === 0) return { handled: true, text: notes.join('，') };
   let name = rest[0];
   if (name.includes('/')) name = name.slice(name.lastIndexOf('/') + 1);
-  if (!/^[A-Za-z_][A-Za-z0-9_.+-]*$/.test(name)) return { handled: false };
+  if (!/^[A-Za-z0-9_][A-Za-z0-9_.+-]*$/.test(name)) return { handled: false };
   const entry = COMMANDS[name];
   if (!entry) return { handled: false };
   const flags = entry.f || {};
@@ -214,7 +214,7 @@ export function detectIntent(input) {
   if (CJK.test(trimmed)) return NL_HINT.test(trimmed) ? 'natural' : 'natural';
   if (SHELL_META.test(trimmed) || /\s--?[A-Za-z]/.test(trimmed)) return 'command';
   if (/^\.{1,2}\//.test(trimmed) || /^~\//.test(trimmed)) return 'command';
-  if (/^[A-Za-z_][A-Za-z0-9_.+-]*$/.test(trimmed)) return 'auto';
+  if (/^[A-Za-z0-9_][A-Za-z0-9_.+-]*$/.test(trimmed)) return 'auto';
   return 'auto';
 }
 

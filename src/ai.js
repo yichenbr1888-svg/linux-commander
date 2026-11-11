@@ -6,8 +6,9 @@
 // in-flight dedupe.
 
 const DEFAULT_MODEL = '';
-const CACHE_TTL_MS = 30 * 60 * 1000;
-const CACHE_MAX = 200;
+// Command knowledge is stable; a long TTL makes repeat queries near-free.
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_MAX = 500;
 
 const SYSTEM_PROMPT = [
   '你是一个 Linux 指令助手，只输出一行 JSON，不要输出任何其他文字、解释或 Markdown 代码块。',
@@ -115,21 +116,24 @@ export function createAiAdapter(config = {}, logger) {
   };
 
   async function request(input, intent) {
+    const body = {
+      model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt(input, intent) },
+      ],
+      stream: false,
+      max_completion_tokens: 3000,
+      // Deep thinking is permanently OFF: this tool only answers simple
+      // command questions; thinking adds seconds of latency for no benefit.
+      thinking: { type: 'disabled' },
+    };
     let res;
     try {
       res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: userPrompt(input, intent) },
-          ],
-          stream: false,
-          temperature: 0.2,
-          max_tokens: 3000,
-        }),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (err) {

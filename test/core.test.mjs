@@ -50,6 +50,12 @@ test('unknown command is not declared invalid locally', () => {
   assert.equal(r.handled, false);
 });
 
+test('digit-leading command names explain locally', () => {
+  const r = explainCommand('7z x archive.7z');
+  assert.equal(r.handled, true);
+  assert.equal(r.kind, 'explain');
+});
+
 test('natural language generation', () => {
   const a = generateNL('查看当前目录所有文件');
   assert.equal(a.handled, true);
