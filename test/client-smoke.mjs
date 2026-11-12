@@ -124,6 +124,16 @@ assert.ok(panel, 'panel rendered');
 assert.equal(panel.props.role, 'dialog');
 assert.match(panel.props.style.left, /^\d+(\.\d+)?px$/);
 assert.match(panel.props.style.top, /^\d+(\.\d+)?px$/);
+// Regression: the root layer spans the viewport with pointer-events:none so
+// panel left/top are true viewport coordinates (a zero-width right-anchored
+// root once pushed the left-positioned panel fully off-screen).
+assert.match(code, /\.lxc-root\{[^}]*width:100%;height:100%[^}]*pointer-events:none/);
+assert.match(code, /\.lxc-dock\{[^}]*pointer-events:auto/);
+assert.match(code, /\.lxc-panel\{[^}]*pointer-events:auto/);
+const leftPx = parseFloat(panel.props.style.left);
+const topPx = parseFloat(panel.props.style.top);
+assert.ok(leftPx >= 0 && leftPx <= win.innerWidth - 340, 'panel left within viewport');
+assert.ok(topPx >= 0 && topPx <= win.innerHeight - 180, 'panel top within viewport');
 const head = byClass(tree, 'lxc-head')[0];
 assert.equal(typeof head.props.onPointerDown, 'function');
 assert.equal(typeof head.props.onPointerMove, 'function');
