@@ -1,4 +1,4 @@
-// Linux 指令器 — AI fallback adapter (host-side only).
+// 译令 — AI fallback adapter (host-side only).
 // Talks to any OpenAI-compatible chat completions endpoint. Endpoint, model
 // and key are supplied per machine via plugin config or environment
 // variables; no vendor-specific values ship with the package. Includes
@@ -11,10 +11,10 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CACHE_MAX = 500;
 
 const SYSTEM_PROMPT = [
-  '你是一个 Linux 指令助手，只输出一行 JSON，不要输出任何其他文字、解释或 Markdown 代码块。',
+  '你是一个 Linux 指令与 SQL 助手，只输出一行 JSON，不要输出任何其他文字、解释或 Markdown 代码块。',
   'JSON 格式：{"kind":"explain"或"generate","command":"...","explanation":"...","warning":"..."}',
   '规则：',
-  '1. kind=explain 时，command 原样返回用户输入的指令，explanation 用通俗简体中文解释这条指令的作用（含参数与管道），不超过 60 字。',
+  '1. kind=explain 时，command 原样返回用户输入的指令或 SQL 语句，explanation 用通俗简体中文解释其作用（Linux 指令含参数与管道；SQL 说明查询或修改了什么数据、条件与排序），不超过 60 字。',
   '2. kind=generate 时，把用户的操作需求转成一条最常用、兼容性好的 Linux 指令放入 command（单行，可直接复制）；explanation 是一句不超过 30 字的简短说明，可为空字符串。',
   '3. 缺少路径、用户名、端口等参数时，使用 <路径> <文件> <用户名> <端口> 这类清晰占位符。',
   '4. 指令有实际风险（删除、覆盖、强制、关机等）时，warning 给出不超过 30 字的简短中文提醒，否则 warning 为空字符串。',
@@ -23,11 +23,13 @@ const SYSTEM_PROMPT = [
 ].join('\n');
 
 function userPrompt(input, intent) {
-  const task = intent === 'command'
-    ? '请解释这条 Linux 指令（kind=explain）。'
-    : intent === 'natural'
-      ? '请把这句操作需求转成一条 Linux 指令（kind=generate）。'
-      : '请先判断输入是 Linux 指令还是操作需求：指令则解释（kind=explain），需求则生成指令（kind=generate）。';
+  const task = intent === 'sql'
+    ? '这是一条 SQL 语句，请解释它的作用（kind=explain）。'
+    : intent === 'command'
+      ? '请解释这条 Linux 指令（kind=explain）。'
+      : intent === 'natural'
+        ? '请把这句操作需求转成一条 Linux 指令（kind=generate）。'
+        : '请先判断输入是 Linux 指令、SQL 语句还是操作需求：指令或 SQL 则解释（kind=explain），需求则生成指令（kind=generate）。';
   return `${task}\n输入：${input}`;
 }
 
@@ -71,7 +73,8 @@ function parseAnswer(content, input, intent) {
         let warning = typeof obj.warning === 'string' ? obj.warning.replace(/\s+/g, ' ').trim() : '';
         if (kind === 'explain' && !command) command = input;
         if (kind === 'generate' && !command) return null;
-        if (command.length > 400) return null;
+        // Explanations echo the input (SQL can be long); generated commands stay short.
+        if (command.length > (kind === 'explain' ? 2000 : 400)) return null;
         return {
           kind,
           command,
@@ -87,7 +90,7 @@ function parseAnswer(content, input, intent) {
   if ((intent === 'natural' || intent === 'auto') && looksCommand && oneLine.length <= 400) {
     return { kind: 'generate', command: oneLine, explanation: '' };
   }
-  if ((intent === 'command' || intent === 'auto') && /[\u4e00-\u9fff]/.test(oneLine) && oneLine.length <= 200) {
+  if ((intent === 'command' || intent === 'sql' || intent === 'auto') && /[\u4e00-\u9fff]/.test(oneLine) && oneLine.length <= 200) {
     return { kind: 'explain', command: input, explanation: oneLine };
   }
   return null;

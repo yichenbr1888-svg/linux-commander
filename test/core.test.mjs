@@ -1,7 +1,7 @@
 // Local core tests: node --test test/core.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectIntent, explainCommand, generateNL, createPipeline } from '../src/core.js';
+import { detectIntent, isSql, explainCommand, generateNL, createPipeline } from '../src/core.js';
 
 const mockAi = {
   calls: [],
@@ -67,6 +67,49 @@ test('natural language generation', () => {
   assert.equal(c.handled, true);
   assert.ok(c.command.includes('find'));
   assert.ok(c.command.includes('.log'));
+});
+
+test('SQL detection by structure', () => {
+  assert.equal(isSql('SELECT name, age FROM users WHERE age > 18 ORDER BY age DESC LIMIT 10'), true);
+  assert.equal(isSql('select * from t'), true);
+  assert.equal(isSql('SELECT 1'), true);
+  assert.equal(isSql('(SELECT a FROM x) UNION (SELECT b FROM y)'), true);
+  assert.equal(isSql('INSERT INTO users (name) VALUES (\'a\')'), true);
+  assert.equal(isSql('UPDATE users SET age = 1 WHERE id = 2'), true);
+  assert.equal(isSql('DELETE FROM logs WHERE ts < NOW()'), true);
+  assert.equal(isSql('CREATE TABLE t (id INT)'), true);
+  assert.equal(isSql('DROP TABLE users'), true);
+  assert.equal(isSql('TRUNCATE TABLE logs'), true);
+  assert.equal(isSql('WITH x AS (SELECT 1) SELECT * FROM x'), true);
+  assert.equal(isSql('EXPLAIN SELECT * FROM t'), true);
+  assert.equal(isSql('SHOW TABLES'), true);
+  // Not SQL: shell commands and plain language keep their old intents.
+  assert.equal(isSql('truncate -s 0 file.log'), false);
+  assert.equal(isSql('ls -la'), false);
+  assert.equal(isSql('delete all log files'), false);
+  assert.equal(isSql('查看磁盘空间'), false);
+  assert.equal(detectIntent('SELECT * FROM t'), 'sql');
+  assert.equal(detectIntent('truncate -s 0 file.log'), 'command');
+  assert.equal(detectIntent('ls -la'), 'command');
+});
+
+test('pipeline: SQL goes straight to AI, never the local library', async () => {
+  mockAi.calls.length = 0;
+  const run = createPipeline({ ai: mockAi });
+  const r = await run('SELECT name FROM users WHERE age > 18');
+  assert.equal(r.ok, true);
+  assert.equal(r.source, 'ai');
+  assert.equal(r.kind, 'explain');
+  assert.equal(mockAi.calls.length, 1);
+  assert.equal(mockAi.calls[0].intent, 'sql');
+});
+
+test('pipeline: SQL without AI configured reports not_configured', async () => {
+  const noAi = { async query() { return { ok: false, code: 'not_configured', message: 'AI 接口未配置，仅支持本地查询' }; } };
+  const run = createPipeline({ ai: noAi });
+  const r = await run('DROP TABLE users');
+  assert.equal(r.ok, false);
+  assert.equal(r.code, 'not_configured');
 });
 
 test('pipeline: local first, no AI call', async () => {

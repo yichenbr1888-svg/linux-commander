@@ -1,13 +1,14 @@
 {
   "meta": {
-    "title": "Linux commands",
-    "description": "A lightweight docked Linux tool: explains commands and turns plain language into commands, local-first with AI fallback."
+    "title": "Yiling",
+    "description": "A lightweight docked command translator: explains Linux commands and SQL, turns plain language into commands, local-first with AI fallback."
   },
   "ui": {
-    "title": "Linux commands",
-    "placeholder": "Command or task",
-    "open": "Open Linux commands",
-    "close": "Collapse",
+    "title": "Yiling",
+    "placeholder": "Command, SQL or task",
+    "open": "Open Yiling",
+    "minimize": "Minimize",
+    "clear": "Clear",
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Copy failed",

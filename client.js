@@ -3,9 +3,9 @@ window.__ModuleLoader__.load({
   id: "dsh-linux-commander",
   factory(require) {
     const React = require('react');
-    const DICT_ZH = {"title":"Linux 指令器","placeholder":"输入指令或操作","open":"打开 Linux 指令器","close":"收起","copy":"复制","copied":"已复制","copyFailed":"复制失败","loading":"查询中","sourceLocal":"本地","sourceAi":"AI","errorGeneric":"查询失败，请稍后重试","errorNetwork":"无法连接本地服务","emptyInput":"请输入内容"};
-    const DICT_EN = {"title":"Linux commands","placeholder":"Command or task","open":"Open Linux commands","close":"Collapse","copy":"Copy","copied":"Copied","copyFailed":"Copy failed","loading":"Searching","sourceLocal":"local","sourceAi":"AI","errorGeneric":"Query failed, please retry","errorNetwork":"Cannot reach the local service","emptyInput":"Type something first"};
-// Linux 指令器 — client widget source (plain JS, inlined into client.js by
+    const DICT_ZH = {"title":"译令","placeholder":"输入指令、SQL 或操作","open":"打开译令","minimize":"最小化","clear":"清除","copy":"复制","copied":"已复制","copyFailed":"复制失败","loading":"查询中","sourceLocal":"本地","sourceAi":"AI","errorGeneric":"查询失败，请稍后重试","errorNetwork":"无法连接本地服务","emptyInput":"请输入内容"};
+    const DICT_EN = {"title":"Yiling","placeholder":"Command, SQL or task","open":"Open Yiling","minimize":"Minimize","clear":"Clear","copy":"Copy","copied":"Copied","copyFailed":"Copy failed","loading":"Searching","sourceLocal":"local","sourceAi":"AI","errorGeneric":"Query failed, please retry","errorNetwork":"Cannot reach the local service","emptyInput":"Type something first"};
+// 译令 — client widget source (plain JS, inlined into client.js by
 // build-client.mjs). Expects React, ctx, t in scope via createWidget args.
 // Minimal floating tool: right-edge dock tab -> compact query panel.
 // Never executes anything; commands are text only.
@@ -18,32 +18,38 @@ const CSS = String.raw`
 .lxc-dock:active{transform:translateX(-2px) scale(.96);}
 .lxc-dock.lxc-dragging{cursor:grabbing;transition:none;color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2);transform:translateX(-2px) scale(1.04);box-shadow:-4px 5px 16px color-mix(in srgb,var(--dsw-alias-label-primary) 20%,transparent);}
 .lxc-dock:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;}
-.lxc-panel{position:absolute;right:10px;width:min(340px,calc(100vw - 24px));max-height:min(460px,calc(100vh - 32px));display:flex;flex-direction:column;background:var(--dsw-alias-bg-overlay);border:1px solid var(--dsw-alias-border-l1);border-radius:14px;box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 16%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);animation:lxc-in .19s cubic-bezier(.2,.7,.3,1);}
+.lxc-panel{position:absolute;width:min(340px,calc(100vw - 24px));max-height:min(460px,calc(100vh - 32px));display:flex;flex-direction:column;background:var(--dsw-alias-bg-overlay);border:1px solid var(--dsw-alias-border-l1);border-radius:14px;box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 16%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);animation:lxc-in .19s cubic-bezier(.2,.7,.3,1);}
 .lxc-panel.lxc-closing{animation:lxc-out .15s ease forwards;}
-.lxc-head{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 8px 14px;flex:none;}
-.lxc-title{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-primary);user-select:none;}
-.lxc-close{width:24px;height:24px;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;transition:background .14s ease,color .14s ease;}
-.lxc-close:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);}
-.lxc-close:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;}
-.lxc-form{padding:0 12px;flex:none;}
-.lxc-input{width:100%;height:36px;padding:0 11px;border:1px solid var(--dsw-alias-border-l1);border-radius:9px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s ease,box-shadow .14s ease;}
+.lxc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 10px 8px 14px;flex:none;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+.lxc-panel.lxc-panel-dragging .lxc-head{cursor:grabbing;}
+.lxc-head button{cursor:pointer;}
+.lxc-head-left{display:flex;align-items:center;gap:6px;min-width:0;}
+.lxc-title{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-primary);user-select:none;white-space:nowrap;}
+.lxc-src{flex:none;font-size:10px;line-height:1.4;padding:1px 6px;border-radius:5px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary);user-select:none;letter-spacing:.04em;}
+.lxc-min{width:24px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;transition:background .14s ease,color .14s ease;}
+.lxc-min:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);}
+.lxc-min:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;}
+.lxc-form{display:flex;align-items:center;gap:6px;padding:0 12px;flex:none;}
+.lxc-input{flex:1;min-width:0;height:36px;padding:0 11px;border:1px solid var(--dsw-alias-border-l1);border-radius:9px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s ease,box-shadow .14s ease;}
 .lxc-input::placeholder{color:var(--dsw-alias-label-secondary);opacity:.75;}
 .lxc-input:focus{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 18%,transparent);}
 .lxc-input.lxc-shake{animation:lxc-shake .24s ease;}
+.lxc-clear{width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;transition:background .14s ease,color .14s ease;}
+.lxc-clear:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);}
+.lxc-clear:disabled{opacity:.35;cursor:default;}
+.lxc-clear:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;}
 .lxc-result{margin:10px 12px 12px;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l2) transparent;}
 .lxc-result::-webkit-scrollbar{width:6px;}
 .lxc-result::-webkit-scrollbar-track{background:transparent;}
 .lxc-result::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:3px;}
 .lxc-result::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--dsw-alias-label-secondary) 55%,transparent);}
-.lxc-cmd{position:relative;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:9px;background:var(--dsw-alias-bg-base);}
-.lxc-cmd code{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px;line-height:1.55;color:var(--dsw-alias-label-primary);white-space:pre-wrap;word-break:break-all;user-select:text;}
-.lxc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px;}
-.lxc-copy{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:11.5px;font-family:inherit;cursor:pointer;transition:color .14s ease,border-color .14s ease,background .14s ease;}
+.lxc-cmd{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:9px;background:var(--dsw-alias-bg-base);}
+.lxc-cmd code{flex:1;min-width:0;display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px;line-height:1.55;color:var(--dsw-alias-label-primary);white-space:pre-wrap;word-break:break-all;user-select:text;}
+.lxc-copy{flex:none;display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:11.5px;font-family:inherit;cursor:pointer;transition:color .14s ease,border-color .14s ease,background .14s ease;}
 .lxc-copy:hover{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 8%,transparent);}
 .lxc-copy:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;}
 .lxc-copy.lxc-ok{color:var(--dsw-alias-state-success-primary);border-color:var(--dsw-alias-state-success-primary);}
 .lxc-copy.lxc-fail{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary);}
-.lxc-src{font-size:10px;color:var(--dsw-alias-label-secondary);opacity:.8;user-select:none;letter-spacing:.04em;}
 .lxc-note{margin-top:8px;font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary);}
 .lxc-warn{display:flex;align-items:flex-start;gap:6px;margin-top:8px;padding:6px 8px;border-radius:7px;background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 10%,transparent);color:var(--dsw-alias-state-warn-primary);font-size:11.5px;line-height:1.5;}
 .lxc-warn svg{flex:none;margin-top:1px;}
@@ -58,11 +64,11 @@ const CSS = String.raw`
 @keyframes lxc-pulse{0%,100%{opacity:.25;transform:scale(.85);}50%{opacity:.9;transform:scale(1);}}
 @keyframes lxc-shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}75%{transform:translateX(3px);}}
 @media (max-width:480px){
-.lxc-panel{right:8px;width:calc(100vw - 16px);}
+.lxc-panel{width:calc(100vw - 16px);}
 .lxc-dock{width:26px;height:48px;margin-top:-24px;}
 }
 @media (prefers-reduced-motion:reduce){
-.lxc-panel,.lxc-dock,.lxc-input,.lxc-copy,.lxc-close,.lxc-loading i{animation:none !important;transition:none !important;}
+.lxc-panel,.lxc-dock,.lxc-input,.lxc-copy,.lxc-min,.lxc-clear,.lxc-loading i{animation:none !important;transition:none !important;}
 .lxc-panel.lxc-closing{opacity:0;}
 }
 `;
@@ -74,9 +80,14 @@ function DockIcon() {
     React.createElement('path', { d: 'M3 4.5 L6.5 8 L3 11.5', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' }),
     React.createElement('line', { x1: 8.2, y1: 11.8, x2: 13, y2: 11.8, stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' }));
 }
-function CloseIcon() {
+function MinimizeIcon() {
   return React.createElement('svg', { ...svgProps, width: 13, height: 13 },
-    React.createElement('path', { d: 'M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' }));
+    React.createElement('line', { x1: 3, y1: 8, x2: 13, y2: 8, stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' }));
+}
+function ClearIcon() {
+  return React.createElement('svg', { ...svgProps, width: 14, height: 14 },
+    React.createElement('circle', { cx: 8, cy: 8, r: 6.2, stroke: 'currentColor', strokeWidth: 1.4 }),
+    React.createElement('path', { d: 'M6 6 L10 10 M10 6 L6 10', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' }));
 }
 function CopyIcon() {
   return React.createElement('svg', { ...svgProps, width: 12, height: 12 },
@@ -100,6 +111,7 @@ function createWidget(React, ctx, t) {
 
   const DOCK_MARGIN = 36; // keep the tab fully on-screen
   const STORE_KEY = 'linux-commander.dockY';
+  const PANEL_STORE_KEY = 'linux-commander.panelPos';
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
 
   function initialDockY() {
@@ -110,6 +122,16 @@ function createWidget(React, ctx, t) {
       if (Number.isFinite(saved) && saved > 0 && saved < 1) frac = saved;
     } catch { /* storage unavailable */ }
     return clamp(frac * vh, DOCK_MARGIN, vh - DOCK_MARGIN);
+  }
+
+  // Saved panel position as viewport fractions; null = anchor near the dock.
+  function initialPanelFrac() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PANEL_STORE_KEY));
+      if (p && Number.isFinite(p.fx) && Number.isFinite(p.fy)
+        && p.fx >= 0 && p.fx <= 1 && p.fy >= 0 && p.fy <= 1) return { fx: p.fx, fy: p.fy };
+    } catch { /* storage unavailable or corrupt */ }
+    return null;
   }
 
   function Widget() {
@@ -123,8 +145,12 @@ function createWidget(React, ctx, t) {
     const [shake, setShake] = useState(false);
     const [dockY, setDockYState] = useState(initialDockY);
     const [vh, setVh] = useState(() => window.innerHeight || 800);
+    const [vw, setVw] = useState(() => window.innerWidth || 1200);
     const [panelH, setPanelH] = useState(180);
+    const [panelW, setPanelW] = useState(340);
+    const [panelFrac, setPanelFracState] = useState(initialPanelFrac);
     const [dragging, setDragging] = useState(false);
+    const [panelDragging, setPanelDragging] = useState(false);
     const [, bump] = useReducer((x) => x + 1, 0);
 
     const inputRef = useRef(null);
@@ -140,6 +166,10 @@ function createWidget(React, ctx, t) {
     const dockYRef = useRef(dockY);
     const dragRef = useRef(null);
     const suppressClickRef = useRef(false);
+    const panelFracRef = useRef(panelFrac);
+    const panelSizeRef = useRef({ w: 340, h: 180 });
+    const panelPosRef = useRef({ left: 0, top: 0 });
+    const panelDragRef = useRef(null);
 
     function setDockY(y) {
       dockYRef.current = y;
@@ -153,23 +183,42 @@ function createWidget(React, ctx, t) {
       } catch { /* storage unavailable */ }
     }
 
+    function setPanelFrac(f) {
+      panelFracRef.current = f;
+      setPanelFracState(f);
+    }
+
+    function persistPanelPos() {
+      try {
+        if (panelFracRef.current) localStorage.setItem(PANEL_STORE_KEY, JSON.stringify(panelFracRef.current));
+      } catch { /* storage unavailable */ }
+    }
+
     useEffect(() => ctx.locale.subscribe(bump), [ctx]);
 
     useEffect(() => {
       const onResize = () => {
         const hgt = window.innerHeight || 800;
+        const wid = window.innerWidth || 1200;
         setVh(hgt);
+        setVw(wid);
         setDockY(clamp(dockYRef.current, DOCK_MARGIN, hgt - DOCK_MARGIN));
       };
       window.addEventListener('resize', onResize);
       return () => window.removeEventListener('resize', onResize);
     }, []);
 
-    // Measure the panel so it stays fully on-screen near the dock position.
+    // Measure the panel so it can be clamped fully on-screen.
     useLayoutEffect(() => {
       if (!open || !panelRef.current) return;
       const el = panelRef.current;
-      const measure = () => setPanelH(el.offsetHeight || 180);
+      const measure = () => {
+        const w = el.offsetWidth || 340;
+        const hh = el.offsetHeight || 180;
+        panelSizeRef.current = { w, h: hh };
+        setPanelW(w);
+        setPanelH(hh);
+      };
       measure();
       if (typeof ResizeObserver === 'undefined') return;
       const ro = new ResizeObserver(measure);
@@ -190,7 +239,7 @@ function createWidget(React, ctx, t) {
         const el = inputRef.current;
         if (el) { el.focus(); el.select(); }
       });
-      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closePanel(); } };
+      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); minimizePanel(); } };
       document.addEventListener('keydown', onKey, true);
       return () => { cancelAnimationFrame(raf); document.removeEventListener('keydown', onKey, true); };
     }, [open]);
@@ -244,6 +293,50 @@ function createWidget(React, ctx, t) {
       persistDockY();
     }
 
+    // --- free drag of the panel by its header ---
+    function onHeadPointerDown(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (e.target && e.target.closest && e.target.closest('button')) return;
+      panelDragRef.current = {
+        startX: e.clientX, startY: e.clientY,
+        origLeft: panelPosRef.current.left, origTop: panelPosRef.current.top,
+        moved: false,
+      };
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
+    }
+
+    function onHeadPointerMove(e) {
+      const d = panelDragRef.current;
+      if (!d) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+      if (!d.moved && Math.abs(dx) + Math.abs(dy) > 4) { d.moved = true; setPanelDragging(true); }
+      if (d.moved) {
+        e.preventDefault();
+        const { w, h: hh } = panelSizeRef.current;
+        const wid = window.innerWidth || vw;
+        const hgt = window.innerHeight || vh;
+        const left = clamp(d.origLeft + dx, 0, Math.max(0, wid - w));
+        const top = clamp(d.origTop + dy, 0, Math.max(0, hgt - hh));
+        setPanelFrac({ fx: wid ? left / wid : 0, fy: hgt ? top / hgt : 0 });
+      }
+    }
+
+    function onHeadPointerUp(e) {
+      const d = panelDragRef.current;
+      panelDragRef.current = null;
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+      if (d && d.moved) {
+        setPanelDragging(false);
+        persistPanelPos();
+      }
+    }
+
+    function onHeadPointerCancel() {
+      panelDragRef.current = null;
+      setPanelDragging(false);
+    }
+
     function openPanel() {
       if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
       closingRef.current = false;
@@ -251,12 +344,11 @@ function createWidget(React, ctx, t) {
       setOpen(true);
     }
 
-    function closePanel() {
+    // Minimize hides the panel but keeps input, result and any in-flight
+    // query, so reopening restores exactly what was on screen.
+    function minimizePanel() {
       if (closingRef.current) return;
       closingRef.current = true;
-      abortRef.current?.abort();
-      seqRef.current++;
-      setPhase((p) => (p === 'loading' ? 'idle' : p));
       setClosing(true);
       closeTimerRef.current = setTimeout(() => {
         closeTimerRef.current = null;
@@ -265,6 +357,19 @@ function createWidget(React, ctx, t) {
         setOpen(false);
         requestAnimationFrame(() => dockRef.current?.focus());
       }, 155);
+    }
+
+    // Clear resets the panel to its freshly opened state.
+    function clearAll() {
+      abortRef.current?.abort();
+      seqRef.current++;
+      lastQueryRef.current = '';
+      setValue('');
+      setResult(null);
+      setError('');
+      setPhase('idle');
+      setCopyState('idle');
+      inputRef.current?.focus();
     }
 
     function submit(e) {
@@ -347,10 +452,20 @@ function createWidget(React, ctx, t) {
         }, h(DockIcon)));
     }
 
-    const panelTop = clamp(dockY - panelH / 2, 8, Math.max(8, vh - panelH - 8));
+    let panelLeft;
+    let panelTop;
+    if (panelFrac) {
+      panelLeft = clamp(panelFrac.fx * vw, 0, Math.max(0, vw - panelW));
+      panelTop = clamp(panelFrac.fy * vh, 0, Math.max(0, vh - panelH));
+    } else {
+      panelLeft = Math.max(8, vw - panelW - 10);
+      panelTop = clamp(dockY - panelH / 2, 8, Math.max(8, vh - panelH - 8));
+    }
+    panelPosRef.current = { left: panelLeft, top: panelTop };
 
     const copyLabel = copyState === 'ok' ? t('copied') : copyState === 'fail' ? t('copyFailed') : t('copy');
-    const sourceLabel = result ? (result.source === 'local' ? t('sourceLocal') : t('sourceAi')) : '';
+    const sourceLabel = phase === 'done' && result ? (result.source === 'local' ? t('sourceLocal') : t('sourceAi')) : '';
+    const canClear = value !== '' || phase !== 'idle' || result !== null;
 
     let body = null;
     if (phase === 'loading') {
@@ -360,14 +475,13 @@ function createWidget(React, ctx, t) {
       body = h('div', { className: 'lxc-err', role: 'alert' }, error);
     } else if (phase === 'done' && result) {
       body = h(React.Fragment, null,
-        h('div', { className: 'lxc-cmd' }, h('code', null, result.command)),
-        h('div', { className: 'lxc-foot' },
+        h('div', { className: 'lxc-cmd' },
+          h('code', null, result.command),
           h('button', {
             type: 'button',
             className: 'lxc-copy' + (copyState === 'ok' ? ' lxc-ok' : copyState === 'fail' ? ' lxc-fail' : ''),
             onClick: copyCommand, 'aria-live': 'polite',
-          }, copyState === 'ok' ? h(CheckIcon) : h(CopyIcon), copyLabel),
-          sourceLabel ? h('span', { className: 'lxc-src' }, sourceLabel) : null),
+          }, copyState === 'ok' ? h(CheckIcon) : h(CopyIcon), copyLabel)),
         result.explanation ? h('div', { className: 'lxc-note' }, result.explanation) : null,
         result.warning ? h('div', { className: 'lxc-warn' }, h(WarnIcon), h('span', null, result.warning)) : null);
     }
@@ -375,13 +489,21 @@ function createWidget(React, ctx, t) {
     return h('div', { className: 'lxc-root' },
       h('div', {
         ref: panelRef,
-        className: 'lxc-panel' + (closing ? ' lxc-closing' : ''),
-        style: { top: panelTop + 'px' },
+        className: 'lxc-panel' + (closing ? ' lxc-closing' : '') + (panelDragging ? ' lxc-panel-dragging' : ''),
+        style: { left: panelLeft + 'px', top: panelTop + 'px' },
         role: 'dialog', 'aria-label': t('title'),
       },
-        h('div', { className: 'lxc-head' },
-          h('span', { className: 'lxc-title' }, t('title')),
-          h('button', { type: 'button', className: 'lxc-close', 'aria-label': t('close'), onClick: closePanel }, h(CloseIcon))),
+        h('div', {
+          className: 'lxc-head',
+          onPointerDown: onHeadPointerDown,
+          onPointerMove: onHeadPointerMove,
+          onPointerUp: onHeadPointerUp,
+          onPointerCancel: onHeadPointerCancel,
+        },
+          h('span', { className: 'lxc-head-left' },
+            h('span', { className: 'lxc-title' }, t('title')),
+            sourceLabel ? h('span', { className: 'lxc-src' }, sourceLabel) : null),
+          h('button', { type: 'button', className: 'lxc-min', 'aria-label': t('minimize'), onClick: minimizePanel }, h(MinimizeIcon))),
         h('form', { className: 'lxc-form', onSubmit: submit },
           h('input', {
             ref: inputRef,
@@ -392,7 +514,11 @@ function createWidget(React, ctx, t) {
             enterKeyHint: 'search',
             onChange: (e) => setValue(e.target.value),
             onKeyDown: (e) => { if (e.key === 'Enter' && e.repeat) e.preventDefault(); },
-          })),
+          }),
+          h('button', {
+            type: 'button', className: 'lxc-clear', 'aria-label': t('clear'),
+            disabled: !canClear, onClick: clearAll,
+          }, h(ClearIcon))),
         h('div', { className: 'lxc-result', 'aria-live': 'polite' }, body)));
   }
 

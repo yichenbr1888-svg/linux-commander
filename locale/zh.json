@@ -1,13 +1,14 @@
 {
   "meta": {
-    "title": "Linux 指令器",
-    "description": "侧边停靠的轻量 Linux 指令工具：解释指令、把自然语言转成指令，本地优先、AI 兜底。"
+    "title": "译令",
+    "description": "侧边停靠的轻量指令翻译工具：解释 Linux 指令与 SQL、把自然语言转成指令，本地优先、AI 兜底。"
   },
   "ui": {
-    "title": "Linux 指令器",
-    "placeholder": "输入指令或操作",
-    "open": "打开 Linux 指令器",
-    "close": "收起",
+    "title": "译令",
+    "placeholder": "输入指令、SQL 或操作",
+    "open": "打开译令",
+    "minimize": "最小化",
+    "clear": "清除",
     "copy": "复制",
     "copied": "已复制",
     "copyFailed": "复制失败",

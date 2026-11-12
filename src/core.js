@@ -1,4 +1,4 @@
-// Linux 指令器 — local recognition and query core.
+// 译令 — local recognition and query core.
 // Pure logic: intent detection, command explanation, natural-language
 // generation, and the local-first pipeline. No I/O here; the AI adapter
 // is injected by the caller.
@@ -204,13 +204,23 @@ export function generateNL(input) {
   return { handled: false };
 }
 
-/** Classify input: 'command' | 'natural' | 'auto'. */
+// SQL statements are recognized by structure (keyword + clause), not by a
+// bare leading word, so shell commands and plain English are not misrouted.
+const SQL_RE = /^(?:select\s+[\s\S]*?\bfrom\b|select\s+[*\d@'"]|insert\s+into\b|update\s+[\s\S]*?\bset\b|delete\s+from\b|(?:create|alter|drop)\s+(?:table|database|index|view|user|schema|procedure|function|trigger)\b|truncate\s+table\b|with\s+\w+\s+as\s*\(|explain\s+(?:select|insert|update|delete|with|analyze)\b|show\s+(?:tables|databases|columns|create|index|processlist|variables|status|grants)\b|describe\s+\w|grant\s+[\s\S]*?\b(?:on|to)\b|revoke\s+[\s\S]*?\b(?:on|from)\b|merge\s+into\b|replace\s+into\b|pragma\s+\w)/i;
+
+/** True when the input is a SQL statement (answered by AI directly). */
+export function isSql(input) {
+  return SQL_RE.test(String(input).trim().replace(/^\(+\s*/, ''));
+}
+
+/** Classify input: 'command' | 'sql' | 'natural' | 'auto'. */
 export function detectIntent(input) {
   const trimmed = input.trim();
   if (!trimmed) return null;
   const first = trimmed.split(/\s+/)[0];
   const base = first.includes('/') ? first.slice(first.lastIndexOf('/') + 1) : first;
   if (COMMANDS[base] || base === 'sudo') return 'command';
+  if (isSql(trimmed)) return 'sql';
   if (CJK.test(trimmed)) return NL_HINT.test(trimmed) ? 'natural' : 'natural';
   if (SHELL_META.test(trimmed) || /\s--?[A-Za-z]/.test(trimmed)) return 'command';
   if (/^\.{1,2}\//.test(trimmed) || /^~\//.test(trimmed)) return 'command';
@@ -221,9 +231,11 @@ export function detectIntent(input) {
 /** Local-first pipeline with injected AI fallback. */
 export function createPipeline({ ai }) {
   return async function run(raw) {
-    const input = String(raw ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, 500);
+    const input = String(raw ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, 2000);
     if (!input) return { ok: false, code: 'empty', message: '请输入内容' };
     const intent = detectIntent(input);
+    // SQL is never in the local library: go straight to AI explanation.
+    if (intent === 'sql') return ai.query(input, 'sql');
     let partial = null;
     if (intent === 'command' || intent === 'auto') {
       const r = explainCommand(input);

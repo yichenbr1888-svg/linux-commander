@@ -1,4 +1,4 @@
-# Linux 指令器 — host row (publish-safe: no secrets or vendor values here).
+# 译令 — host row (publish-safe: no secrets or vendor values here).
 # Configure the AI backend per machine via EITHER environment variables:
 #   DSH_LINUX_COMMANDER_API_KEY   (required for AI fallback)
 #   DSH_LINUX_COMMANDER_ENDPOINT  (OpenAI-compatible chat completions URL)

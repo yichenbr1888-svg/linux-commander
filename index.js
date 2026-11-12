@@ -1,4 +1,4 @@
-// Linux 指令器 — Host half.
+// 译令 — Host half.
 // Registers one loopback HTTP route that the browser widget calls.
 // All AI traffic (and the API key) stays in this host process; the client
 // bundle contains no credentials. Local library answers never touch AI.
